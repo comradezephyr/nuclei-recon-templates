@@ -1,0 +1,53 @@
+id: exposed-laravel-env
+
+info:
+  name: Exposed Laravel .env File
+  author: comradezephyr
+  severity: high
+  description: Laravel .env publicly accessible leaking application secrets and database credentials.
+  tags:
+    - config
+    - exposure
+    - laravel
+    - misconfiguration
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/.env.local"
+      - "{{BaseURL}}/.env.production"
+      - "{{BaseURL}}/.env.bak"
+      - "{{BaseURL}}/laravel/.env"
+      - "{{BaseURL}}/public/.env"
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "APP_KEY"
+          - "APP_ENV"
+          - "DB_HOST"
+          - "DB_PASSWORD"
+        condition: and
+
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^APP_KEY=base64:[A-Za-z0-9+/]+={0,2}"
+          - "(?m)^APP_ENV=(local|development|staging|production)"
+        condition: and
+
+    extractors:
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^APP_KEY=base64:[A-Za-z0-9+/]+={0,2}"
+          - "(?m)^DB_USERNAME=.*"
+          - "(?m)^DB_PASSWORD=.*"
+          - "(?m)^APP_URL=.*"
